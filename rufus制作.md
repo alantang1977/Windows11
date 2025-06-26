@@ -1,3 +1,5 @@
+rufus下载：https://rufus.ie/zh/
+
 rufus制作win11启动盘准备工作及注意事项：
 
 1、准备一个8G容量或以上的U盘
