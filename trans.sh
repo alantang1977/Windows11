@@ -10,7 +10,7 @@ set -eE
 
 # 用于判断 reinstall.sh 和 trans.sh 是否兼容
 # shellcheck disable=SC2034
-SCRIPT_VERSION=4BACD833-A585-23BA-6CBB-9AA4E08E0003
+SCRIPT_VERSION=4BACD833-A585-23BA-6CBB-9AA4E08E0004
 
 TRUE=0
 FALSE=1
@@ -294,7 +294,7 @@ setup_websocketd() {
     pkill websocketd || true
     # websocketd 遇到 \n 才推送，因此要转换 \r 为 \n
     websocketd --port "$web_port" --loglevel=fatal --staticdir=/tmp \
-        stdbuf -oL -eL sh -c "tail -fn+0 /reinstall.log | tr '\r' '\n'" &
+        stdbuf -oL -eL sh -c "tail -fn+0 /reinstall.log | tr '\r' '\n' | grep -Fiv -e password -e token" &
 }
 
 get_approximate_ram_size() {
@@ -934,10 +934,14 @@ unix2dos() {
 }
 
 insert_into_file() {
-    file=$1
-    location=$2
-    regex_to_find=$3
+    local file=$1
+    local location=$2
+    local regex_to_find=$3
     shift 3
+
+    if ! [ -f "$file" ]; then
+        error_and_exit "File not found: $file"
+    fi
 
     # 默认 grep -E
     if [ $# -eq 0 ]; then
@@ -1852,9 +1856,8 @@ add_frpc_systemd_service_if_need() {
         # 下载 frpc
         # 注意下载的 frpc owner 不是 root:root
         frpc_url=$(get_frpc_url linux)
-        basename=$(echo "$frpc_url" | awk -F/ '{print $NF}' | sed 's/\.tar\.gz//')
         download "$frpc_url" "$os_dir/frpc.tar.gz"
-        tar xzf "$os_dir/frpc.tar.gz" "$basename/frpc" -O >"$os_dir/usr/local/bin/frpc"
+        tar xzf "$os_dir/frpc.tar.gz" "*/frpc" -O >"$os_dir/usr/local/bin/frpc"
         rm -f "$os_dir/frpc.tar.gz"
         chmod a+x "$os_dir/usr/local/bin/frpc"
 
